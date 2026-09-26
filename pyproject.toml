@@ -5,6 +5,7 @@ description = "A URL shortener with click analytics"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.141.1",
+    "psycopg[binary]>=3.3.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
