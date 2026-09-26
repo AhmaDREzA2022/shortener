@@ -10,7 +10,7 @@ from app.db import Base, get_db
 from app.main import app
 
 # A separate engine/session for tests, so the app's session isn't reused.
-test_engine = create_async_engine(settings.database_url, echo=False)
+test_engine = create_async_engine(settings.test_database_url, echo=False)
 TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)
 
 
