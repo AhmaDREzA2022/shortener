@@ -4,8 +4,11 @@ version = "0.1.0"
 description = "A URL shortener with click analytics"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.20.0",
     "fastapi>=0.141.1",
     "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy[asyncio]>=2.1.1",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -15,3 +18,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
