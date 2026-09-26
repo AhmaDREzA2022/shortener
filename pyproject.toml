@@ -3,7 +3,10 @@ name = "shortener"
 version = "0.1.0"
 description = "A URL shortener with click analytics"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.54.0",
+]
 
 [tool.ruff]
 line-length = 100
