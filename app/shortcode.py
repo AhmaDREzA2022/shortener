@@ -1,6 +1,6 @@
 import secrets
 
-ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ23456789"
+ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 #  Removed: 0/O, 1/l/I — ambiguous chars confuse users reading a code off a screen.
 
 

@@ -17,7 +17,7 @@ app = FastAPI(title="Shortener", version="0.1.0")
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"messages": "Hello world"}
+    return {"message": "hello kali"}
 
 
 @app.get("/health")
@@ -58,6 +58,7 @@ async def shorten(
         created_at=link.created_at,
     )
 
+
 @app.get("/{code}")
 async def redirect(
     code: str,
@@ -67,9 +68,7 @@ async def redirect(
     if link is None:
         raise HTTPException(status_code=404, detail="Short code not found")
 
-    await db.execute(
-        update(Link).where(Link.id == link.id).values(clicks=Link.clicks + 1)
-    )
+    await db.execute(update(Link).where(Link.id == link.id).values(clicks=Link.clicks + 1))
     await db.commit()
 
     return RedirectResponse(url=link.url, status_code=302)
