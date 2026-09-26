@@ -58,6 +58,25 @@ async def shorten(
         created_at=link.created_at,
     )
 
+@app.get("/links", response_model=list[LinkResponse])
+async def list_links(
+    db: AsyncSession = Depends(get_db),
+    limit: int = 50,
+) -> list[LinkResponse]:
+    result = await db.scalars(
+        select(Link).order_by(Link.id.desc()).limit(limit)
+    )
+    links = result.all()
+    return [
+        LinkResponse(
+            code=link.code,
+            url=link.url,
+            short_url=f"{settings.base_url}/{link.code}",
+            clicks=link.clicks,
+            created_at=link.created_at,
+        )
+        for link in links
+    ]
 
 @app.get("/{code}")
 async def redirect(
