@@ -1,0 +1,17 @@
+<tr id="row-{{ link.code }}">
+  <td>
+    <a href="/{{ link.code }}" target="_blank">{{ link.code }}</a>
+  </td>
+  <td class="url-cell">
+    <a href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a>
+  </td>
+  <td class="clicks-cell">{{ link.clicks }}</td>
+  <td>
+    <button
+      hx-delete="/api/links/{{ link.code }}"
+      hx-target="#row-{{ link.code }}"
+      hx-swap="outerHTML"
+      hx-confirm="Delete this link?"
+    >×</button>
+  </td>
+</tr>

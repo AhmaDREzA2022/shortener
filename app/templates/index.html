@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Shortener — Home{% endblock %}
+
+{% block content %}
+  <section class="shorten-box">
+    <h1>Shorten a URL</h1>
+    <form
+      hx-post="/shorten"
+      hx-target="#links-body"
+      hx-swap="afterbegin"
+      hx-on::after-request="if(event.detail.successful) this.reset()"
+    >
+      <input
+        type="url"
+        name="url"
+        placeholder="https://example.com/very/long/path"
+        required
+        autofocus
+      >
+      <button type="submit">Shorten</button>
+    </form>
+  </section>
+
+  <section class="links-box">
+    <h2>Recent links</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>URL</th>
+          <th>Clicks</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="links-body">
+        {% for link in links %}
+          {% include "_link_row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

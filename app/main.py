@@ -1,5 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,14 +10,30 @@ from app.models import Link
 from app.schemas import LinkResponse, ShortenRequest
 from app.shortcode import generate_code
 
+from fastapi import Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
 app = FastAPI(title="Shortener", version="0.1.0")
+
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # _links: dict[str, str] = {} added the db so no need for this
 
 
-@app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "hello kali"}
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLResponse:
+    result = await db.scalars(select(Link).order_by(Link.id.desc()).limit(50))
+    links = result.all()
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"links": links})
 
 
 @app.get("/health")
