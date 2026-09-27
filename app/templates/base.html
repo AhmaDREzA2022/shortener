@@ -6,6 +6,16 @@
         <title>{% block title %}Shortener{% endblock %}</title>
         <link rel="stylesheet" href="/static/style.css" />
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script>
+            document.body.addEventListener("htmx:responseError", (e) => {
+                let msg = "Request failed";
+                try {
+                    const detail = JSON.parse(e.detail.xhr.responseText).detail;
+                    msg = Array.isArray(detail) ? detail[0].msg : detail;
+                } catch {}
+                alert(msg);
+            });
+        </script>
     </head>
     <body>
         <header>
