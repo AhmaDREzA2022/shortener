@@ -25,7 +25,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/shorten", response_model=LinkResponse)
+@app.post("/api/shorten", response_model=LinkResponse, tags=["api"])
 async def shorten(
     payload: ShortenRequest,
     db: AsyncSession = Depends(get_db),
@@ -58,7 +58,7 @@ async def shorten(
         created_at=link.created_at,
     )
 
-@app.get("/links", response_model=list[LinkResponse])
+@app.get("/api/links", response_model=list[LinkResponse], tags=["api"])
 async def list_links(
     db: AsyncSession = Depends(get_db),
     limit: int = 50,
