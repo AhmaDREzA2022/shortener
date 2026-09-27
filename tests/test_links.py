@@ -4,7 +4,8 @@ from httpx import AsyncClient
 async def test_root(client: AsyncClient) -> None:
     r = await client.get("/")
     assert r.status_code == 200
-    assert r.json() == {"message": "hello kali"}
+    assert "text/html" in r.headers["content-type"]
+    assert "Shorten a URL" in r.text
 
 
 async def test_health(client: AsyncClient) -> None:

@@ -1,5 +1,10 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from pathlib import Path
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,13 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app.models import Link
-from app.schemas import LinkResponse, ShortenRequest
+from app.schemas import LinkResponse, ShortenForm, ShortenRequest
 from app.shortcode import generate_code
-
-from fastapi import Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -23,6 +23,23 @@ app = FastAPI(title="Shortener", version="0.1.0")
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+
+async def _create_link(url: str, db: AsyncSession) -> Link:
+    for _ in range(5):
+        link = Link(code=generate_code(), url=url)
+        db.add(link)
+        try:
+            await db.commit()
+            await db.refresh(link)
+            return link
+        except IntegrityError:
+            await db.rollback()
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Could not generate unique code",
+    )
+
+
 # _links: dict[str, str] = {} added the db so no need for this
 
 
@@ -30,10 +47,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLResponse:
     result = await db.scalars(select(Link).order_by(Link.id.desc()).limit(50))
     links = result.all()
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"links": links})
+    return templates.TemplateResponse(request=request, name="index.html", context={"links": links})
 
 
 @app.get("/health")
@@ -41,31 +55,26 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.post("/shorten", response_class=HTMLResponse)
+async def shorten_html(
+    request: Request,
+    form: Annotated[ShortenForm, Form()],
+    db: AsyncSession = Depends(get_db),
+) -> HTMLResponse:
+    link = await _create_link(str(form.url), db)
+    return templates.TemplateResponse(
+        request=request,
+        name="_link_row.html",
+        context={"link": link},
+    )
+
+
 @app.post("/api/shorten", response_model=LinkResponse, tags=["api"])
 async def shorten(
     payload: ShortenRequest,
     db: AsyncSession = Depends(get_db),
 ) -> LinkResponse:
-    url = str(payload.url)
-
-    # try few times in case of rare collisions
-    for _ in range(5):
-        code = generate_code()
-        link = Link(code=code, url=url)
-        db.add(link)
-
-        try:
-            await db.commit()
-            await db.refresh(link)
-            break
-        except IntegrityError:
-            await db.rollback()
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not generate unique code",
-        )
-
+    link = await _create_link(str(payload.url), db)
     return LinkResponse(
         code=link.code,
         url=link.url,
@@ -74,14 +83,13 @@ async def shorten(
         created_at=link.created_at,
     )
 
+
 @app.get("/api/links", response_model=list[LinkResponse], tags=["api"])
 async def list_links(
     db: AsyncSession = Depends(get_db),
     limit: int = 50,
 ) -> list[LinkResponse]:
-    result = await db.scalars(
-        select(Link).order_by(Link.id.desc()).limit(limit)
-    )
+    result = await db.scalars(select(Link).order_by(Link.id.desc()).limit(limit))
     links = result.all()
     return [
         LinkResponse(
@@ -93,6 +101,7 @@ async def list_links(
         )
         for link in links
     ]
+
 
 @app.get("/{code}")
 async def redirect(
