@@ -41,3 +41,19 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def auth_client(client: AsyncClient) -> AsyncClient:
+    """A client that is signed up and logged in as test user."""
+    email = "test@example.com"
+    password = "testpassword123"
+
+    r = await client.post("/api/signup", json={"email": email, "password": password})
+    # If the user already exists from a previous test in the same session, ignore it
+    assert r.status_code in (201, 409)
+
+    r = await client.post("/api/login", json={"email": email, "password": password})
+    assert r.status_code == 200
+
+    return client

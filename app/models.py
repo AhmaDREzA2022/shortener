@@ -25,7 +25,7 @@ class Link(Base):
     url: Mapped[str] = mapped_column(String(2048))
     clicks: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    owner_id: Mapped[int | None] = mapped_column(
+    owner_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
