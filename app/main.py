@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -11,8 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db
-from app.models import Link
-from app.schemas import LinkResponse, ShortenForm, ShortenRequest
+from app.models import Link, User
+from app.schemas import LinkResponse, ShortenForm, ShortenRequest, UserCreate, UserResponse
+from app.security import hash_password
 from app.shortcode import generate_code
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -101,6 +102,32 @@ async def list_links(
         )
         for link in links
     ]
+
+
+@app.post(
+    "/api/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED, tags=["auth"]
+)
+async def signup(
+    payload: UserCreate,
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    # check existing
+    existing = await db.scalar(select(User).where(User.email == payload.email.lower()))
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Email already registered")
+
+    user = User(
+        email=payload.email.lower(),
+        password_hash=hash_password(payload.password),
+    )
+    db.add(user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Email already registered")
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
 
 
 @app.delete("/api/links/{code}", status_code=status.HTTP_204_NO_CONTENT, tags=["api"])
