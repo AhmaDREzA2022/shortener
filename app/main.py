@@ -37,9 +37,9 @@ app.add_middleware(
 # ---------- Helpers ----------
 
 
-async def _create_link(url: str, db: AsyncSession) -> Link:
+async def _create_link(url: str, owner_id: int, db: AsyncSession) -> Link:
     for _ in range(5):
-        link = Link(code=generate_code(), url=url)
+        link = Link(code=generate_code(), url=url, owner_id=owner_id)
         db.add(link)
         try:
             await db.commit()
@@ -53,6 +53,20 @@ async def _create_link(url: str, db: AsyncSession) -> Link:
     )
 
 
+async def get_current_user(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = await db.get(User, user_id)
+    if user is None:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
 # _links: dict[str, str] = {} added the db so no need for this
 
 # ---------- Routes ----------
@@ -60,9 +74,18 @@ async def _create_link(url: str, db: AsyncSession) -> Link:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLResponse:
-    result = await db.scalars(select(Link).order_by(Link.id.desc()).limit(50))
-    links = result.all()
-    return templates.TemplateResponse(request=request, name="index.html", context={"links": links})
+    user_id = request.session.get("user_id")
+    links: list[link] = []
+    if user_id is not None:
+        result = await db.scalars(
+            select(Link).where(Link.owner_id == user_id).order_by(Link.id.desc()).limit(50)
+        )
+        links = list(result.all())
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"links": links, "user_email": ...},
+    )
 
 
 @app.post("/shorten", response_class=HTMLResponse)
@@ -155,9 +178,10 @@ def health() -> dict[str, str]:
 @app.post("/api/shorten", response_model=LinkResponse, tags=["api"])
 async def shorten(
     payload: ShortenRequest,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> LinkResponse:
-    link = await _create_link(str(payload.url), db)
+    link = await _create_link(str(payload.url), user.id, db)
     return LinkResponse(
         code=link.code,
         url=link.url,
@@ -169,10 +193,13 @@ async def shorten(
 
 @app.get("/api/links", response_model=list[LinkResponse], tags=["api"])
 async def list_links(
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     limit: int = 50,
 ) -> list[LinkResponse]:
-    result = await db.scalars(select(Link).order_by(Link.id.desc()).limit(limit))
+    result = await db.scalars(
+        select(Link).where(Link.owner_id == user.id).order_by(Link.id.desc()).limit(limit)
+    )
     links = result.all()
     return [
         LinkResponse(
@@ -189,9 +216,12 @@ async def list_links(
 @app.delete("/api/links/{code}", status_code=status.HTTP_204_NO_CONTENT, tags=["api"])
 async def delete_link(
     code: str,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    result = await db.execute(delete(Link).where(Link.code == code))
+    result = await db.execute(
+        delete(Link).where(Link.code == code).where(Link.owner_id == user.id)
+    )
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Short code not found")
     await db.commit()

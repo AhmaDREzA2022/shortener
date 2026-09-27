@@ -26,7 +26,7 @@ class Link(Base):
     clicks: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     owner_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
-    owner: Mapped["User | None"] = relationship(back_populates="links")
+    owner: Mapped["User"] = relationship(back_populates="links")
