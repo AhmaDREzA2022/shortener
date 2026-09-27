@@ -64,3 +64,18 @@ async def test_list_links_newest_first(client: AsyncClient) -> None:
     listing = await client.get("/api/links")
     returned = [link["code"] for link in listing.json()]
     assert returned == list(reversed(codes))
+
+async def test_delete_link(client: AsyncClient) -> None:
+    r = await client.post("/api/shorten", json={"url": "https://example.com"})
+    code = r.json()["code"]
+
+    r = await client.delete(f"/api/links/{code}")
+    assert r.status_code == 204
+
+    r = await client.get(f"/{code}", follow_redirects=False)
+    assert r.status_code == 404
+
+
+async def test_delete_unknown_returns_404(client: AsyncClient) -> None:
+    r = await client.delete("/api/links/doesnotexist")
+    assert r.status_code == 404

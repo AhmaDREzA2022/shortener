@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,6 +101,17 @@ async def list_links(
         )
         for link in links
     ]
+
+
+@app.delete("/api/links/{code}", status_code=status.HTTP_204_NO_CONTENT, tags=["api"])
+async def delete_link(
+    code: str,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(delete(Link).where(Link.code == code))
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Short code not found")
+    await db.commit()
 
 
 @app.get("/{code}")
