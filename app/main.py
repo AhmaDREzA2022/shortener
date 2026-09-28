@@ -91,7 +91,7 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLRes
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"links": links, "user": user, "base_url": settings.base_url},
+        context={"links": links, "user": user},
     )
 
 
@@ -288,7 +288,7 @@ async def shorten(
     return LinkResponse(
         code=link.code,
         url=link.url,
-        short_url=f"{settings.base_url}/{link.code}",
+        short_url=link.short_url, # instead of f"{settings.base_url}/{link.code}"
         clicks=link.clicks,
         created_at=link.created_at,
     )

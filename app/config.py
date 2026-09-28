@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     test_database_url: str = (
         "postgresql+psycopg://shortener:shortener@localhost:5432/shortener_test"
     )
-    base_url: str = "http://127.0.0.1:8000"
+    base_url: str = "http://127.0.0.1:8000/"
     secret_key: str = "dev-only-change-me"
 
 

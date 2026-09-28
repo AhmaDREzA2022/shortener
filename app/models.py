@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.config import settings
 from app.db import Base
 
 
@@ -30,3 +31,7 @@ class Link(Base):
     )
 
     owner: Mapped["User"] = relationship(back_populates="links")
+
+    @property
+    def short_url(self) -> str:
+        return f"{settings.base_url}/{self.code}"
