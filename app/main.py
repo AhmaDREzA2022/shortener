@@ -316,16 +316,17 @@ async def list_links(
     ]
 
 
-@app.delete("/api/links/{code}", status_code=status.HTTP_204_NO_CONTENT, tags=["api"])
+@app.delete("/api/links/{code}", status_code=status.HTTP_200_OK, tags=["api"])
 async def delete_link(
     code: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> str:
     result = await db.execute(delete(Link).where(Link.code == code).where(Link.owner_id == user.id))
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Short code not found")
     await db.commit()
+    return ""
 
 
 @app.get("/{code}")

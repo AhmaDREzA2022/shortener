@@ -42,6 +42,17 @@
                     }
                 }
             });
+
+            document.body.addEventListener("htmx:afterSwap", () => {
+                const tbody = document.getElementById("links-body");
+                const table = document.getElementById("links-table");
+                const empty = document.getElementById("links-empty");
+                if (!tbody || !table || !empty) return;
+
+                const hasRows = tbody.children.length > 0;
+                table.style.display = hasRows ? "" : "none";
+                empty.style.display = hasRows ? "none" : "block";
+            });
         </script>
     </body>
 </html>
