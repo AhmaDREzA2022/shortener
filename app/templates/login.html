@@ -1,0 +1,35 @@
+{% extends "base.html" %} {% block title %}Log in — Shortener{% endblock %} {%
+block content %}
+<section class="auth-box">
+    <h1>Log in</h1>
+
+    {% if error %}
+    <div class="alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login">
+        <label>
+            <span>Email</span>
+            <input
+                type="email"
+                name="email"
+                required
+                autofocus
+                autocomplete="email"
+            />
+        </label>
+        <label>
+            <span>Password</span>
+            <input
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+            />
+        </label>
+        <button type="submit">Log in</button>
+    </form>
+
+    <p class="auth-alt">Don't have an account? <a href="/signup">Sign up</a></p>
+</section>
+{% endblock %}

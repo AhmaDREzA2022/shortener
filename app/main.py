@@ -75,17 +75,119 @@ async def get_current_user(
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLResponse:
     user_id = request.session.get("user_id")
-    links: list[link] = []
+    user: User | None = None
+    links: list[Link] = []
+
     if user_id is not None:
-        result = await db.scalars(
-            select(Link).where(Link.owner_id == user_id).order_by(Link.id.desc()).limit(50)
-        )
-        links = list(result.all())
+        user = await db.get(User, user_id)
+        if user is None:
+            request.session.clear()
+        else:
+            result = await db.scalars(
+                select(Link).where(Link.owner_id == user.id).order_by(Link.id.desc()).limit(50)
+            )
+            links = list(result.all())
+
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"links": links, "user_email": ...},
+        context={"links": links, "user": user},
     )
+
+
+from fastapi import Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request) -> HTMLResponse:
+    if request.session.get("user_id"):
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"user": None, "error": None},
+    )
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login_form(
+    request: Request,
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: AsyncSession = Depends(get_db),
+) -> HTMLResponse:
+    user = await db.scalar(select(User).where(User.email == email.lower()))
+    if user is None or not verify_password(password, user.password_hash):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"user": None, "error": "Invalid email or password"},
+            status_code=401,
+        )
+    request.session["user_id"] = user.id
+    return RedirectResponse("/", status_code=303)
+
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request) -> HTMLResponse:
+    if request.session.get("user_id"):
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="signup.html",
+        context={"user": None, "error": None},
+    )
+
+
+@app.post("/signup", response_class=HTMLResponse)
+async def signup_form(
+    request: Request,
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: AsyncSession = Depends(get_db),
+) -> HTMLResponse:
+    # basic validation — reuse server-side rules
+    email_norm = email.strip().lower()
+    if "@" not in email_norm or len(password) < 8:
+        return templates.TemplateResponse(
+            request=request,
+            name="signup.html",
+            context={"user": None, "error": "Enter a valid email and a password of 8+ characters"},
+            status_code=400,
+        )
+
+    existing = await db.scalar(select(User).where(User.email == email_norm))
+    if existing is not None:
+        return templates.TemplateResponse(
+            request=request,
+            name="signup.html",
+            context={"user": None, "error": "That email is already registered"},
+            status_code=409,
+        )
+
+    user = User(email=email_norm, password_hash=hash_password(password))
+    db.add(user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        return templates.TemplateResponse(
+            request=request,
+            name="signup.html",
+            context={"user": None, "error": "That email is already registered"},
+            status_code=409,
+        )
+    await db.refresh(user)
+
+    request.session["user_id"] = user.id
+    return RedirectResponse("/", status_code=303)
+
+
+@app.post("/logout")
+async def logout_form(request: Request) -> RedirectResponse:
+    request.session.clear()
+    return RedirectResponse("/", status_code=303)
 
 
 @app.post("/shorten", response_class=HTMLResponse)
@@ -219,9 +321,7 @@ async def delete_link(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    result = await db.execute(
-        delete(Link).where(Link.code == code).where(Link.owner_id == user.id)
-    )
+    result = await db.execute(delete(Link).where(Link.code == code).where(Link.owner_id == user.id))
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Short code not found")
     await db.commit()
