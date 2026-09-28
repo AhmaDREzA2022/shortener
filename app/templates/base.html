@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{% block title %}Shortener{% endblock %}</title>
         <link rel="stylesheet" href="/static/style.css" />
-        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="/static/vendor/htmx.min.js"></script>
     </head>
     <body>
         <header>
@@ -31,13 +31,16 @@
         </footer>
 
         <script>
-            document.body.addEventListener("htmx:responseError", (e) => {
-                let msg = "Request failed";
-                try {
-                    const detail = JSON.parse(e.detail.xhr.responseText).detail;
-                    msg = Array.isArray(detail) ? detail[0].msg : detail;
-                } catch {}
-                alert(msg);
+            document.body.addEventListener("htmx:afterSwap", (e) => {
+                if (e.detail.target.id === "links-body") {
+                    // First link added — reveal the table, hide the placeholder
+                    const table = document.getElementById("links-table");
+                    const empty = document.getElementById("links-empty");
+                    if (table && empty && table.style.display === "none") {
+                        table.style.display = "";
+                        empty.style.display = "none";
+                    }
+                }
             });
         </script>
     </body>

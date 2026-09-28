@@ -21,8 +21,7 @@ block content %} {% if user %}
 
 <section class="links-box">
     <h2>Your links</h2>
-    {% if links %}
-    <table>
+    <table {% if not links %}style="display:none" {% endif %} id="links-table">
         <thead>
             <tr>
                 <th>Code</th>
@@ -35,9 +34,19 @@ block content %} {% if user %}
             {% for link in links %} {% include "_link_row.html" %} {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <p class="empty">No links yet. Shorten your first URL above.</p>
-    {% endif %}
+    <p
+        id="links-empty"
+        class="empty"
+        {%
+        if
+        links
+        %}style="display:none"
+        {%
+        endif
+        %}
+    >
+        No links yet. Shorten your first URL above.
+    </p>
 </section>
 {% else %}
 <section class="hero">

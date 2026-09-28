@@ -194,9 +194,10 @@ async def logout_form(request: Request) -> RedirectResponse:
 async def shorten_html(
     request: Request,
     form: Annotated[ShortenForm, Form()],
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> HTMLResponse:
-    link = await _create_link(str(form.url), db)
+    link = await _create_link(str(form.url), user.id, db)
     return templates.TemplateResponse(
         request=request,
         name="_link_row.html",
