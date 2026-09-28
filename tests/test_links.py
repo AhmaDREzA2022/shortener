@@ -132,9 +132,10 @@ async def test_list_links_requires_login(client: AsyncClient) -> None:
 async def test_delete_link(auth_client: AsyncClient) -> None:
     r = await auth_client.post("/api/shorten", json={"url": "https://example.com"})
     code = r.json()["code"]
-
+    # 200 (not 204) because htmx does not swap on 204 responses;
+    # the delete button depends on receiving a 200 with an empty body.
     r = await auth_client.delete(f"/api/links/{code}")
-    assert r.status_code == 204
+    assert r.status_code == 200
 
     r = await auth_client.get(f"/{code}", follow_redirects=False)
     assert r.status_code == 404

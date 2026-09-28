@@ -316,6 +316,9 @@ async def list_links(
     ]
 
 
+# 200 (not 204) because htmx does not swap on 204 responses;
+# the delete button depends on receiving a 200 with an empty body.
+
 @app.delete("/api/links/{code}", status_code=status.HTTP_200_OK, tags=["api"])
 async def delete_link(
     code: str,
