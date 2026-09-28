@@ -91,7 +91,7 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLRes
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"links": links, "user": user},
+        context={"links": links, "user": user, "base_url": settings.base_url},
     )
 
 

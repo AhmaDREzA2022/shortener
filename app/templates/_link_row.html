@@ -1,17 +1,31 @@
 <tr id="row-{{ link.code }}">
-  <td>
-    <a href="/{{ link.code }}" target="_blank">{{ link.code }}</a>
-  </td>
-  <td class="url-cell">
-    <a href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a>
-  </td>
-  <td class="clicks-cell">{{ link.clicks }}</td>
-  <td>
-    <button
-      hx-delete="/api/links/{{ link.code }}"
-      hx-target="#row-{{ link.code }}"
-      hx-swap="delete"
-      hx-confirm="Delete this link?"
-    >×</button>
-  </td>
+    <td>
+        <span class="code-cell">
+            <a href="/{{ link.code }}" target="_blank">{{ link.code }}</a>
+            <button
+                type="button"
+                class="copy-btn"
+                data-url="{{ base_url }}/{{ link.code }}"
+                title="Copy short URL"
+            >
+                ⧉
+            </button>
+        </span>
+    </td>
+    <td class="url-cell">
+        <a href="{{ link.url }}" target="_blank" rel="noopener"
+            >{{ link.url }}</a
+        >
+    </td>
+    <td class="clicks-cell">{{ link.clicks }}</td>
+    <td>
+        <button
+            hx-delete="/api/links/{{ link.code }}"
+            hx-target="#row-{{ link.code }}"
+            hx-swap="delete"
+            hx-confirm="Delete this link?"
+        >
+            ×
+        </button>
+    </td>
 </tr>

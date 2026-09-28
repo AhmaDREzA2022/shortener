@@ -72,6 +72,26 @@
                     childList: true,
                 });
             });
+
+            document.addEventListener("click", async (e) => {
+                const btn = e.target.closest(".copy-btn");
+                if (!btn) return;
+                e.preventDefault();
+
+                const url = btn.dataset.url;
+                try {
+                    await navigator.clipboard.writeText(url);
+                    const original = btn.textContent;
+                    btn.textContent = "✓";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                        btn.textContent = original;
+                        btn.classList.remove("copied");
+                    }, 1200);
+                } catch (err) {
+                    alert("Copy failed: " + err.message);
+                }
+            });
         </script>
     </body>
 </html>
