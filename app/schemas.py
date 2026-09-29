@@ -1,19 +1,33 @@
+import re
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
+
+ALIAS_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,30}[a-z0-9]$")
 
 
 class ShortenBase(BaseModel):
     url: HttpUrl
+    alias: str | None = None
 
+    @field_validator("alias")
+    @classmethod
+    def validate_alias(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return None
+        if not ALIAS_RE.match(v):
+            raise ValueError(
+                "Alias must be 3-32 chars: lowercase letters, digits, dash, underscore; "
+                "must start and end with a letter or digit"
+            )
+        return v
 
 class ShortenForm(ShortenBase):
-    """Parsed from an HTML form (application/x-www-form-urlencoded)."""
+    pass
 
 
 class ShortenRequest(ShortenBase):
-    """Parsed from a JSON request body."""
-
+    pass
 
 class LinkResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -23,6 +37,7 @@ class LinkResponse(BaseModel):
     short_url: str
     clicks: int
     created_at: datetime
+
 
 class UserCreate(BaseModel):
     email: EmailStr

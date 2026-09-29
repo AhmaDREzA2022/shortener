@@ -37,7 +37,20 @@ app.add_middleware(
 # ---------- Helpers ----------
 
 
-async def _create_link(url: str, owner_id: int, db: AsyncSession) -> Link:
+async def _create_link(url: str, owner_id: int, db: AsyncSession, alias: str | None = None) -> Link:
+    if alias is not None:
+        link = Link(code=alias, url=url, owner_id=owner_id)
+        db.add(link)
+        try:
+            await db.commit()
+            await db.refresh(link)
+            return link
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="That alias is already taken"
+            )
+
     for _ in range(5):
         link = Link(code=generate_code(), url=url, owner_id=owner_id)
         db.add(link)
@@ -66,8 +79,6 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
-
-# _links: dict[str, str] = {} added the db so no need for this
 
 # ---------- Routes ----------
 
@@ -197,7 +208,7 @@ async def shorten_html(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> HTMLResponse:
-    link = await _create_link(str(form.url), user.id, db)
+    link = await _create_link(str(form.url), user.id, db, alias=form.alias)
     return templates.TemplateResponse(
         request=request,
         name="_link_row.html",
@@ -284,11 +295,11 @@ async def shorten(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> LinkResponse:
-    link = await _create_link(str(payload.url), user.id, db)
+    link = await _create_link(str(payload.url), user.id, db, alias=payload.alias)
     return LinkResponse(
         code=link.code,
         url=link.url,
-        short_url=link.short_url, # instead of f"{settings.base_url}/{link.code}"
+        short_url=link.short_url,  # instead of f"{settings.base_url}/{link.code}"
         clicks=link.clicks,
         created_at=link.created_at,
     )
@@ -318,6 +329,7 @@ async def list_links(
 
 # 200 (not 204) because htmx does not swap on 204 responses;
 # the delete button depends on receiving a 200 with an empty body.
+
 
 @app.delete("/api/links/{code}", status_code=status.HTTP_200_OK, tags=["api"])
 async def delete_link(

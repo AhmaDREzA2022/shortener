@@ -405,3 +405,34 @@ header nav a:hover {
     color: #4ade80;
     border-color: #4ade80;
 }
+
+/* ----- */
+
+.shorten-box form {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.shorten-box input[type="url"] {
+    flex: 1 1 300px;
+}
+
+.shorten-box input[type="text"].alias-input {
+    flex: 0 1 200px;
+    padding: 0.65rem 0.9rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.shorten-box input[type="text"].alias-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.shorten-box input[type="text"].alias-input::placeholder {
+    color: var(--muted);
+}

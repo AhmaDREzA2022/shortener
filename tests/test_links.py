@@ -212,3 +212,39 @@ async def test_users_cannot_see_each_others_links(client: AsyncClient) -> None:
 
         r = await client_b.get("/api/links")
         assert r.json() == []
+
+
+async def test_custom_alias(auth_client: AsyncClient) -> None:
+    r = await auth_client.post(
+        "/api/shorten",
+        json={"url": "https://example.com", "alias": "my-docs"},
+    )
+    assert r.status_code == 200
+    assert r.json()["code"] == "my-docs"
+
+
+async def test_alias_conflict_returns_409(auth_client: AsyncClient) -> None:
+    payload = {"url": "https://example.com", "alias": "taken-code"}
+    r1 = await auth_client.post("/api/shorten", json=payload)
+    assert r1.status_code == 200
+
+    r2 = await auth_client.post("/api/shorten", json=payload)
+    assert r2.status_code == 409
+    assert "taken" in r2.json()["detail"].lower()
+
+
+async def test_invalid_alias_returns_422(auth_client: AsyncClient) -> None:
+    r = await auth_client.post(
+        "/api/shorten",
+        json={"url": "https://example.com", "alias": "BAD!"},
+    )
+    assert r.status_code == 422
+
+
+async def test_empty_alias_generates_random(auth_client: AsyncClient) -> None:
+    r = await auth_client.post(
+        "/api/shorten",
+        json={"url": "https://example.com", "alias": ""},
+    )
+    assert r.status_code == 200
+    assert len(r.json()["code"]) == 7  # random default length
