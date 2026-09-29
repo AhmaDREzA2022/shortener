@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_validator
 
-ALIAS_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,30}[a-z0-9]$")
+ALIAS_RE = re.compile(r"^[a-z0-9][-a-z0-9_]{1,30}[a-z0-9]$")
 
 
 class ShortenBase(BaseModel):
@@ -22,12 +22,14 @@ class ShortenBase(BaseModel):
             )
         return v
 
+
 class ShortenForm(ShortenBase):
     pass
 
 
 class ShortenRequest(ShortenBase):
     pass
+
 
 class LinkResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

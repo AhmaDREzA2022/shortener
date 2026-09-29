@@ -31,66 +31,58 @@
         </footer>
 
         <script>
-            document.body.addEventListener("htmx:afterSwap", (e) => {
-                if (e.detail.target.id === "links-body") {
-                    // First link added — reveal the table, hide the placeholder
-                    const table = document.getElementById("links-table");
-                    const empty = document.getElementById("links-empty");
-                    if (table && empty && table.style.display === "none") {
-                        table.style.display = "";
-                        empty.style.display = "none";
-                    }
-                }
-            });
-
-            document.body.addEventListener("htmx:afterSwap", () => {
-                const tbody = document.getElementById("links-body");
-                const table = document.getElementById("links-table");
-                const empty = document.getElementById("links-empty");
-                if (!tbody || !table || !empty) return;
-
-                const hasRows = tbody.children.length > 0;
-                table.style.display = hasRows ? "" : "none";
-                empty.style.display = hasRows ? "none" : "block";
-            });
-
             document.addEventListener("DOMContentLoaded", () => {
                 const tbody = document.getElementById("links-body");
                 const table = document.getElementById("links-table");
                 const empty = document.getElementById("links-empty");
-                if (!tbody || !table || !empty) return;
-
-                const update = () => {
-                    const hasRows = tbody.children.length > 0;
-                    table.style.display = hasRows ? "" : "none";
-                    empty.style.display = hasRows ? "none" : "block";
-                };
-
-                update(); // run once on load
-
-                new MutationObserver(update).observe(tbody, {
-                    childList: true,
-                });
-            });
-
-            document.addEventListener("click", async (e) => {
-                const btn = e.target.closest(".copy-btn");
-                if (!btn) return;
-                e.preventDefault();
-
-                const url = btn.dataset.url;
-                try {
-                    await navigator.clipboard.writeText(url);
-                    const original = btn.textContent;
-                    btn.textContent = "✓";
-                    btn.classList.add("copied");
-                    setTimeout(() => {
-                        btn.textContent = original;
-                        btn.classList.remove("copied");
-                    }, 1200);
-                } catch (err) {
-                    alert("Copy failed: " + err.message);
+                if (tbody && table && empty) {
+                    const update = () => {
+                        const hasRows = tbody.children.length > 0;
+                        table.style.display = hasRows ? "" : "none";
+                        empty.style.display = hasRows ? "none" : "block";
+                    };
+                    update();
+                    new MutationObserver(update).observe(tbody, {
+                        childList: true,
+                    });
                 }
+
+                document.addEventListener("htmx:responseError", (e) => {
+                    const xhr = e.detail.xhr;
+                    let msg = `Request failed (${xhr.status})`;
+                    try {
+                        const body = JSON.parse(xhr.responseText);
+                        const detail = body.detail;
+                        if (typeof detail === "string") {
+                            msg = detail;
+                        } else if (Array.isArray(detail) && detail.length) {
+                            msg = detail[0].msg || msg;
+                        }
+                    } catch {}
+                    alert(msg);
+                });
+
+                document.addEventListener("htmx:sendError", (e) => {
+                    alert("Network error: could not reach the server.");
+                });
+
+                document.addEventListener("click", async (evt) => {
+                    const btn = evt.target.closest(".copy-btn");
+                    if (!btn) return;
+                    evt.preventDefault();
+                    try {
+                        await navigator.clipboard.writeText(btn.dataset.url);
+                        const orig = btn.textContent;
+                        btn.textContent = "✓";
+                        btn.classList.add("copied");
+                        setTimeout(() => {
+                            btn.textContent = orig;
+                            btn.classList.remove("copied");
+                        }, 1200);
+                    } catch (err) {
+                        alert("Copy failed: " + err.message);
+                    }
+                });
             });
         </script>
     </body>
