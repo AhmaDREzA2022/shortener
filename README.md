@@ -1,5 +1,7 @@
 # Shortener
 
+[![CI](https://github.com/AhmaDREzA2022/shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/AhmaDREzA2022/shortener/actions/workflows/ci.yml)
+
 A small, self-hosted URL shortener with click analytics and custom aliases.
 
 Built with FastAPI, HTMX, Postgres, and Jinja2. No JavaScript build step. No npm.
