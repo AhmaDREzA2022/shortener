@@ -1,3 +1,5 @@
+[![CI](https://github.com/AhmaDREzA2022/shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/AhmaDREzA2022/shortener/actions/workflows/ci.yml)
+
 # Shortener
 
 A small, self-hosted URL shortener with click analytics and custom aliases.
