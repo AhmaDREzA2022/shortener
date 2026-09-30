@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: shortener
+          POSTGRES_PASSWORD: shortener
+          POSTGRES_DB: shortener
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shortener -d shortener"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg://shortener:shortener@localhost:5432/shortener
+      TEST_DATABASE_URL: postgresql+psycopg://shortener:shortener@localhost:5432/shortener_test
+      SECRET_KEY: ci-test-secret-not-used-in-prod
+      BASE_URL: http://testserver
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Create test database
+        run: |
+          PGPASSWORD=shortener psql -h localhost -U shortener -d shortener \
+            -c "CREATE DATABASE shortener_test OWNER shortener;"
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest -v
