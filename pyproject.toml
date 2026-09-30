@@ -21,15 +21,25 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [
+    "migrations/versions",
+    ".venv",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "B008",  # FastAPI Depends() in defaults — required pattern
+    "B904",  # raise ... from err — noisy for HTTPException
+    "E402",  # module-level imports not at top — needed in alembic/env.py
+]
 
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.9",
 ]
 
 [tool.pytest.ini_options]

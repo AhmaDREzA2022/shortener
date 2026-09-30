@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -104,10 +104,6 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)) -> HTMLRes
         name="index.html",
         context={"links": links, "user": user},
     )
-
-
-from fastapi import Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
 
 
 @app.get("/login", response_class=HTMLResponse)
